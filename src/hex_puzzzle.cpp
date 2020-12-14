@@ -85,7 +85,7 @@ const char * mapname = "Levels\\map_maybe\\map.lev";
 
 void RenderTile(bool reflect, int t, int x, int y, int cliplift=-1);
 
-int keyState[SDLK_LAST] = {0};
+int keyState[SDL_NUM_SCANCODES] = {0};
 
 String GetFilePath(const char* file, const char* flags)
 {
@@ -179,7 +179,9 @@ FILE *file_open( const char *file, const char *flags )
 #define LIFT_TIME 0.5
 #define JUMP_TIME 0.4
 
-#define X(NAME,FILE,ALPHA) SDL_Surface* NAME = 0;
+#define X(NAME, TEX, FILE,ALPHA) SDL_Surface* NAME = 0;
+#include "gfx_list.h"
+#define X(NAME, TEX, FILE,ALPHA) SDL_Texture* TEX = 0;
 #include "gfx_list.h"
 int scrollX=0, scrollY=0, initScrollX=0, initScrollY=0;
 int mapRightBound = 0;
@@ -704,7 +706,7 @@ void RenderTile(bool reflect, int t, int x, int y, int cliplift)
 	{
 	//	dst.w=src.w; dst.h=src.h;
 	//	SDL_FillRect(screen, &dst, rand());
-		SDL_BlitSurface(reflect ? tileGraphicsR : tileGraphics, &src, screen, &dst);
+		SDL_RenderCopy(screenRenderer, reflect ? tileGraphicsR_tex : tileGraphics_tex, &src, &dst);
 	}
 	else
 	{
@@ -712,7 +714,7 @@ void RenderTile(bool reflect, int t, int x, int y, int cliplift)
 		if (src.h > TILE_W1)
 		{
 			src.h -= TILE_W1/2;
-			SDL_BlitSurface(tileGraphics, &src, screen, &dst);
+			SDL_RenderCopy(screenRenderer, tileGraphics_tex, &src, &dst);
 			src.y += src.h;
 			dst.y += src.h;
 			src.h = TILE_W1/2;
@@ -721,7 +723,7 @@ void RenderTile(bool reflect, int t, int x, int y, int cliplift)
 		{
 			src.w -= TILE_W1*2, src.x += TILE_W1;
 			dst.x += TILE_W1;
-			SDL_BlitSurface(tileGraphics, &src, screen, &dst);
+			SDL_RenderCopy(screenRenderer, tileGraphics_tex, &src, &dst);
 		}
 	}	
 }
@@ -735,7 +737,7 @@ void RenderGirl(bool reflect, int r, int frame, int x, int y, int h)
 		y -= h;
 	SDL_Rect src = {sx, sy, 64, 80};
 	SDL_Rect dst = {x-scrollX-32, y-scrollY-65, 0, 0};
-	SDL_BlitSurface(girlGraphics, &src, screen, &dst);
+	SDL_RenderCopy(screenRenderer, girlGraphics_tex, &src, &dst);
 }
 
 struct ItemRender : public RenderStage
@@ -2395,11 +2397,8 @@ struct HexPuzzle : public State
 
 		if (!g) FATAL("Unable to load file", bmp);
 		if (colourKey)
-			SDL_SetColorKey(g, SDL_SRCCOLORKEY, SDL_MapRGB(g->format, WATER_COLOUR));
-		SDL_Surface * out = SDL_DisplayFormat(g);
-		SDL_FreeSurface(g);
-		if (!out) FATAL("Unable to create SDL surface (SDL_DisplayFormat)");
-		return out;
+			SDL_SetColorKey(g, SDL_TRUE, SDL_MapRGB(g->format, WATER_COLOUR));
+		return g;
 	}
 
 	#ifdef USE_LEVEL_PACKFILE
@@ -2407,7 +2406,7 @@ struct HexPuzzle : public State
 	#endif
 	HexPuzzle()
 	{
-		SDL_WM_SetCaption(GAMENAME, 0);
+		SDL_SetWindowTitle(screen, GAMENAME);
 
 		time = 0;
 
@@ -2464,8 +2463,8 @@ struct HexPuzzle : public State
 	{
 		if (!activeMenu || activeMenu->renderBG)
 		{
-			SDL_Rect src  = {0,0,screen->w,screen->h};
-			SDL_Rect dst  = {0,0,screen->w,screen->h};
+			SDL_Rect src  = {0,0,SCREEN_W,SCREEN_H};
+			SDL_Rect dst  = {0,0,SCREEN_W,SCREEN_H};
 			if (isRenderMap)
 			{
 				int boundW = mapBG->w;
@@ -2490,11 +2489,10 @@ struct HexPuzzle : public State
 
 				if (isMap)
 					mapScrollX = scrollX;
-
-				SDL_BlitSurface(mapBG, &src, screen, &dst);
+				SDL_RenderCopy(screenRenderer, mapBG_tex, &src, &dst);
 			}
 			else
-				SDL_BlitSurface(gradient, &src, screen, &dst);
+				SDL_RenderCopy(screenRenderer, gradient_tex, &src, &dst);
 
 			renderer.Render(time, true);
 
@@ -2503,33 +2501,30 @@ struct HexPuzzle : public State
 				DoHints();
 			}
 
-			if (1)
-			{
-				SDL_Rect src = {0,SCREEN_H-1,SCREEN_W,1};
-				SDL_Rect dst = {0,SCREEN_H-1,SCREEN_W,1};
-				for (int i=0; i<SCREEN_H; i++)
-				{
-					dst.x = src.x = 0;
-					dst.y = src.y = SCREEN_H-1-i;
-					src.w = SCREEN_W;
-					src.h = 1;
 
-					if (isRenderMap)
-					{
-						src.x += (int)( sin(i*0.9 + time*3.7) * sin(i*0.3 + time*0.7)*4 );
-						src.y += (int)( (sin(i*0.3 - time*2.2) * sin(i*0.48 + time*0.47) - 1) * 1.99 );
-					}
-					else
-					{
-						src.x += (int)( sin(i*0.5 + time*6.2) * sin(i*0.3 + time*1.05) * 5 );
-						src.y += (int)( (sin(i*0.4 - time*4.3) * sin(i*0.08 + time*1.9) - 1) * 2.5 );
-					}
-					SDL_BlitSurface(screen, &src, screen, &dst);
+			for (int i=0; i<SCREEN_H; i++)
+			{
+				dst.x = src.x = 0;
+				dst.y = src.y = SCREEN_H-1-i;
+				src.w = SCREEN_W;
+				src.h = 1;
+
+				if (isRenderMap)
+				{
+					src.x += (int)( sin(i*0.9 + time*3.7) * sin(i*0.3 + time*0.7)*4 );
+					src.y += (int)( (sin(i*0.3 - time*2.2) * sin(i*0.48 + time*0.47) - 1) * 1.99 );
 				}
+				else
+				{
+					src.x += (int)( sin(i*0.5 + time*6.2) * sin(i*0.3 + time*1.05) * 5 );
+					src.y += (int)( (sin(i*0.4 - time*4.3) * sin(i*0.08 + time*1.9) - 1) * 2.5 );
+				}
+				SDL_RenderPresent(screenRenderer);
+				SDL_RenderClear(screenRenderer);
 			}
 
 			if(isRenderMap)
-				SDL_BlitSurface(mapBG2, &src, screen, &dst);
+				SDL_RenderCopy(screenRenderer, mapBG2_tex, &src, &dst);
 
 			renderer.Render(time, false);
 
@@ -2611,7 +2606,7 @@ struct HexPuzzle : public State
 				dst.x = p.getScreenX() - scrollX;
 				dst.y = p.getScreenY() - scrollY - FONT_SPACING*3 - FONT_SPACING/2;
 		//		if (dst.x > SCREEN_W*2/3) dst.x -= TILE_W3 + src.w;
-		//		if (dst.y+src.h > screen->h-pad) dst.y = screen->h-pad - src.h;
+		//		if (dst.y+src.h > SCREEN_H-pad) dst.y = SCREEN_H-pad - src.h;
 
 				RenderTile(false, 0, p.getScreenX(), p.getScreenY());
 			//	SDL_BlitSurface(uiGraphics, &src, screen, &dst);
@@ -3716,7 +3711,7 @@ retry_pos:
 		else
 			UpdateKeys();
 
-		for (int i=0; i<SDLK_LAST; i++)
+		for (int i=0; i<SDL_NUM_SCANCODES; i++)
 			if (keyState[i])
 				keyState[i] = 1;
 
@@ -3786,15 +3781,15 @@ retry_pos:
 		if (isMap && !editMode)
 		{
 
-			if ((keyState[SDLK_q] | keyState[SDLK_KP7]) & 2) keyboardp.x--;
-			else if ((keyState[SDLK_d] | keyState[SDLK_KP3]) & 2) keyboardp.x++;
-			else if ((keyState[SDLK_e] | keyState[SDLK_KP9]) & 2) keyboardp.x++, keyboardp.y--;
-			else if ((keyState[SDLK_a] | keyState[SDLK_KP1]) & 2) keyboardp.x--, keyboardp.y++;
-			else if ((keyState[SDLK_w] | keyState[SDLK_KP8] | keyState[SDLK_UP]) & 2) keyboardp.y--;
-			else if ((keyState[SDLK_s] | keyState[SDLK_KP2] | keyState[SDLK_DOWN]) & 2) keyboardp.y++;
+			if ((keyState[SDLK_q] | keyState[SDLK_KP_7]) & 2) keyboardp.x--;
+			else if ((keyState[SDLK_d] | keyState[SDLK_KP_3]) & 2) keyboardp.x++;
+			else if ((keyState[SDLK_e] | keyState[SDLK_KP_9]) & 2) keyboardp.x++, keyboardp.y--;
+			else if ((keyState[SDLK_a] | keyState[SDLK_KP_1]) & 2) keyboardp.x--, keyboardp.y++;
+			else if ((keyState[SDLK_w] | keyState[SDLK_KP_8] | keyState[SDLK_UP]) & 2) keyboardp.y--;
+			else if ((keyState[SDLK_s] | keyState[SDLK_KP_2] | keyState[SDLK_DOWN]) & 2) keyboardp.y++;
 			else if ((keyState[SDLK_LEFT]) & 2) keyboardp.x--, keyboardp.y+=keyboardp.x&1;
 			else if (((keyState[SDLK_RIGHT]) & 2)) { if (keyboardp.x < mapRightBound) keyboardp.y-=keyboardp.x&1, keyboardp.x++; }
-			else if ((keyState[SDLK_RETURN] | keyState[SDLK_KP5] | keyState[SDLK_SPACE] | keyState[SDLK_KP_ENTER]) & 2) 
+			else if ((keyState[SDLK_RETURN] | keyState[SDLK_KP_5] | keyState[SDLK_SPACE] | keyState[SDLK_KP_ENTER]) & 2) 
 			{
 				// Simulate user clicking on it...
 				Mouse(keyboardp.getScreenX()-scrollX, keyboardp.getScreenY()-scrollY, 0, 0, 1, 0, 0);
@@ -3821,12 +3816,12 @@ retry_pos:
 		{
 			static int usedDiag = 0;
 
-			if (keyState[SDLK_q] || keyState[SDLK_KP7]) HandleKey('q', 0);
-			else if (keyState[SDLK_w] || keyState[SDLK_KP8]) HandleKey('w', 0);
-			else if (keyState[SDLK_e] || keyState[SDLK_KP9]) HandleKey('e', 0);
-			else if (keyState[SDLK_a] || keyState[SDLK_KP1]) HandleKey('a', 0);
-			else if (keyState[SDLK_s] || keyState[SDLK_KP2]) HandleKey('s', 0);
-			else if (keyState[SDLK_d] || keyState[SDLK_KP3]) HandleKey('d', 0);
+			if (keyState[SDLK_q] || keyState[SDLK_KP_7]) HandleKey('q', 0);
+			else if (keyState[SDLK_w] || keyState[SDLK_KP_8]) HandleKey('w', 0);
+			else if (keyState[SDLK_e] || keyState[SDLK_KP_9]) HandleKey('e', 0);
+			else if (keyState[SDLK_a] || keyState[SDLK_KP_1]) HandleKey('a', 0);
+			else if (keyState[SDLK_s] || keyState[SDLK_KP_2]) HandleKey('s', 0);
+			else if (keyState[SDLK_d] || keyState[SDLK_KP_3]) HandleKey('d', 0);
 
 			else if (keyState[SDLK_UP] && keyState[SDLK_LEFT]) HandleKey('q', 0), usedDiag=1;
 			else if (keyState[SDLK_UP] && keyState[SDLK_RIGHT]) HandleKey('e', 0), usedDiag=1;
@@ -3848,10 +3843,11 @@ retry_pos:
 
 		if (activeMenu)
 		{
-			bool eat = activeMenu->KeyPressed(key, mod);
-			if (!activeMenu)
-				memset(keyState, 0, sizeof(keyState));
-			return eat;
+			// bool eat = activeMenu->KeyPressed(key, mod);
+			// if (!activeMenu)
+			// 	memset(keyState, 0, sizeof(keyState));
+			// return eat;
+			return SDL_TRUE;
 		}
 		else
 		{
@@ -3925,13 +3921,13 @@ retry_pos:
 		if (isMap && !editMode)
 			return false;
 
-		else if (key==SDLK_KP9 || key=='e') Input(1), noMouse=1;
-		else if (key==SDLK_KP3 || key=='d') Input(2), noMouse=1;
-		else if (key==SDLK_KP1 || key=='a') Input(4), noMouse=1;
-		else if (key==SDLK_KP7 || key=='q') Input(5), noMouse=1;
-		else if (key==SDLK_KP8 || key=='w') Input(0), noMouse=1;
-		else if (key==SDLK_KP2 || (key=='s' && (((mod & (KMOD_CTRL|KMOD_ALT))==0)||!editMode))) Input(3), noMouse=1;
-		else if (key==SDLK_KP5 || key==SDLK_SPACE || key==SDLK_RETURN || key==SDLK_KP_ENTER)
+		else if (key==SDLK_KP_9 || key==SDLK_e) Input(1), noMouse=1;
+		else if (key==SDLK_KP_3 || key==SDLK_d) Input(2), noMouse=1;
+		else if (key==SDLK_KP_1 || key==SDLK_a) Input(4), noMouse=1;
+		else if (key==SDLK_KP_7 || key==SDLK_q) Input(5), noMouse=1;
+		else if (key==SDLK_KP_8 || key==SDLK_w) Input(0), noMouse=1;
+		else if (key==SDLK_KP_2 || (key==SDLK_s && (((mod & (KMOD_CTRL|KMOD_ALT))==0)||!editMode))) Input(3), noMouse=1;
+		else if (key==SDLK_KP_5 || key==SDLK_SPACE || key==SDLK_RETURN || key==SDLK_KP_ENTER)
 		{
 			noMouse=1;
 			if (win && winFinal)
@@ -4072,7 +4068,7 @@ retry_pos:
 	}
 	void LoadGraphics()
 	{
-		#define X(NAME,FILE,ALPHA) NAME = Load(String(FILE) + BMP_SUFFIX, ALPHA);
+		#define X(NAME,TEX,FILE,ALPHA) NAME = Load(String(FILE) + BMP_SUFFIX, ALPHA);
 		#include "gfx_list.h"
 
 		static int first = 1;
@@ -4081,6 +4077,9 @@ retry_pos:
 			first = false;
 			MakeTileInfo();
 		}
+
+		#define X(NAME,TEX,FILE,ALPHA) TEX = SDL_CreateTextureFromSurface(screenRenderer, NAME);
+		#include "gfx_list.h"
 
 	//	unsigned int d = {
 
@@ -4091,7 +4090,7 @@ retry_pos:
 	}
 	void FreeGraphics()
 	{
-		#define X(NAME,FILE,ALPHA) if (NAME) SDL_FreeSurface(NAME), NAME=0;
+		#define X(NAME,TEX,FILE,ALPHA) if (NAME) SDL_FreeSurface(NAME), NAME=0;
 		#include "gfx_list.h"
 	}
 	virtual void ScreenModeChanged() 

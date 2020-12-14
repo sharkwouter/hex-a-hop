@@ -50,9 +50,9 @@ struct Menu {
 
 	virtual bool KeyPressed(int key, int /*mod*/)
 	{
-		if (key=='w' || key==SDLK_UP || key==SDLK_KP8 || key=='q' || key=='e' || key==SDLK_KP7 || key==SDLK_KP9)
+		if (key=='w' || key==SDLK_UP || key==SDLK_KP_8 || key=='q' || key=='e' || key==SDLK_KP_7 || key==SDLK_KP_9)
 			Move(-1), noMouse=1;
-		else if (key=='s' || key==SDLK_DOWN || key==SDLK_KP2 || key=='a' || key=='d' || key==SDLK_KP1 || key==SDLK_KP3)
+		else if (key=='s' || key==SDLK_DOWN || key==SDLK_KP_2 || key=='a' || key=='d' || key==SDLK_KP_1 || key==SDLK_KP_3)
 			Move(1), noMouse=1;
 		else if (key==' ' || key==SDLK_RETURN)
 		{
@@ -240,10 +240,10 @@ struct HintMessage : public Menu
 		OuterTextWindowRect.x = InnerTextWindowRect.x-2;
 		OuterTextWindowRect.y = InnerTextWindowRect.y-2-FONT_SPACING;
 		// Height is reduced in SDL_FillRect!!? Why? ==> Use a copy:
-		SDL_Rect r2 = InnerTextWindowRect;
-		SDL_Rect r = OuterTextWindowRect;
-		SDL_FillRect(screen, &r, SDL_MapRGB(screen->format, 60,90,90));
-		SDL_FillRect(screen, &r2, SDL_MapRGB(screen->format, 20,50,50));
+		// SDL_Rect r2 = InnerTextWindowRect;
+		// SDL_Rect r = OuterTextWindowRect;
+		// SDL_FillRect(screen, &r, SDL_MapRGB(r->format, 60,90,90));
+		// SDL_FillRect(screen, &r2, SDL_MapRGB(r2->format, 20,50,50));
 		Print(OuterTextWindowRect.x+FONT_SPACING/4, y-FONT_SPACING, "%s", title);
 		/* TRANSLATORS: This specifies how the text in the help dialog should
 		   be aligned. Do *not* translate the text itself but use one of "left",
@@ -549,8 +549,10 @@ struct OptMenu : public Menu
 	}
 	void RenderBG()
 	{
-		SDL_FillRect(screen, &r, SDL_MapRGB(screen->format, 60,90,90));
-		SDL_FillRect(screen, &r2, SDL_MapRGB(screen->format, 20,50,50));
+		SDL_SetRenderDrawColor(screenRenderer, 20, 50, 50, 255);
+
+		// SDL_FillRect(screen, &r, SDL_MapRGB(screen->format, 60,90,90));
+		// SDL_FillRect(screen, &r2, SDL_MapRGB(screen->format, 20,50,50));
 	}
 	void RenderTitle()
 	{
@@ -672,9 +674,10 @@ struct OptMenuTitle : public OptMenu
 	{
 		SDL_Rect a = {0,0,SCREEN_W,SCREEN_H};
 //		SDL_FillRect(screen, &a, SDL_MapRGB(screen->format, 10,25,25));
+		SDL_SetRenderDrawColor(screenRenderer, 10, 25, 25, 255);
 
 		
-		SDL_BlitSurface(titlePage, &a, screen, &a);
+		SDL_RenderCopy(screenRenderer, titlePage_tex, &a, &a);
 
 		OptMenu::RenderTitle();
 		OptMenu::RenderOptions();
@@ -869,7 +872,9 @@ struct Ending : public Menu
 	void Render()
 	{
 		SDL_Rect a = {0,0,SCREEN_W,SCREEN_H};
-		SDL_FillRect(screen, &a, SDL_MapRGB(screen->format, 10,25,25));
+		SDL_SetRenderDrawColor(screenRenderer, 10, 25, 25, 255);
+
+		//SDL_FillRect(screen, &a, SDL_MapRGB(screen->format, 10,25,25));
 
 		for (unsigned int i=0; i<sizeof(p)/sizeof(p[0]); i++)
 			p[i].Update(t);

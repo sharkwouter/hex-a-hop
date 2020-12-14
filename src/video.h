@@ -15,6 +15,7 @@
 // Hacky workaround for MSVC's broken for scoping
 //#define for if (0) ; else for
 
-extern SDL_Surface * screen;
+extern SDL_Window * screen;
+extern SDL_Renderer * screenRenderer;
 
 #endif

@@ -32,10 +32,10 @@ hex_a_hop_CPPFLAGS = \
 	$(TEXT_FLAGS) \
 	$(SOUND_FLAGS) \
 	$(PATH_CPPFLAGS) \
-	$(SDL_CFLAGS)
+	$(SDL2_CFLAGS)
 
 hex_a_hop_LDFLAGS = \
 	$(PATH_LDFLAGS)
 
 hex_a_hop_LDADD = \
-	$(SDL_LIBS)
+	$(SDL2_LIBS)

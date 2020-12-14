@@ -18,13 +18,13 @@
 
 
 //X(fontImage,		"font",				true)
-X(gradient,			"gradient",			false)
-X(mapBG,			"map",				false)
-X(mapBG2,			"map_top",			true)
-X(tileGraphics,		"tiles",			true)
-X(tileGraphicsR,	"tiles_reflect",	true)
-X(girlGraphics,		"emi",				true)
-X(titlePage,		"title",			false)
+X(gradient, gradient_tex,		"gradient",			false)
+X(mapBG, mapBG_tex,			"map",				false)
+X(mapBG2, mapBG2_tex,			"map_top",			true)
+X(tileGraphics, tileGraphics_tex,		"tiles",			true)
+X(tileGraphicsR, tileGraphicsR_tex,	"tiles_reflect",	true)
+X(girlGraphics, girlGraphics_tex,		"emi",				true)
+X(titlePage,    titlePage_tex,		"title",			false)
 //X(iconGfx,			"icon",				false)
 
 //X(uiGraphics,		"ui",				true)

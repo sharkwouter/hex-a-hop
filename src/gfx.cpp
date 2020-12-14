@@ -42,8 +42,6 @@
 StateMakerBase* StateMakerBase::first = 0;
 State* StateMakerBase::current = 0;
 
-int SDL_focus = SDL_APPACTIVE | SDL_APPINPUTFOCUS;	// Initial focus state
-
 #ifdef WIN32
 	#include <windows.h>
 	#include <winuser.h>
@@ -113,8 +111,8 @@ int quitting = 0;
 double stylusx= 0, stylusy= 0;
 int stylusok= 0;
 float styluspressure = 0;
-SDL_Surface * screen = 0;
-SDL_Surface * realScreen = 0;
+SDL_Window * screen = 0;
+SDL_Renderer * screenRenderer = 0;
 
 extern State* MakeWorld();
 
@@ -122,36 +120,22 @@ bool fullscreen = false;
 
 void InitScreen()
 {
+	screen = SDL_CreateWindow("",
+	SDL_WINDOWPOS_UNDEFINED,
+	SDL_WINDOWPOS_UNDEFINED,
+	SCREEN_W, SCREEN_H, // Width, Height
+	SDL_WINDOW_OPENGL | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0) );
+
 #ifdef USE_OPENGL
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-
-//	printf("SDL_SetVideoMode (OpenGL)\n");
-	realScreen = SDL_SetVideoMode(
-		SCREEN_W, SCREEN_H, // Width, Height
-		0, // Current BPP
-		SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : 0) );
+	screenRenderer = SDL_CreateRenderer(screen, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 #else
-//	printf("SDL_SetVideoMode (non-OpenGL)\n");
-	realScreen = SDL_SetVideoMode(
-		SCREEN_W, SCREEN_H, // Width, Height
-		0, // Current BPP
-		SDL_SWSURFACE | SDL_DOUBLEBUF | (fullscreen ? SDL_FULLSCREEN : 0) );
+	screenRenderer = SDL_CreateRenderer(screen, -1, SDL_RENDERER_SOFTWARE);
 #endif
-
-	if (screen)
-		SDL_FreeSurface(screen);
-
-	SDL_Surface* tempscreen = SDL_CreateRGBSurface(
-		SDL_SWSURFACE, 
-		SCREEN_W, SCREEN_H,
-		16, 0xf800, 0x07e0, 0x001f, 0);
-
-	screen = SDL_DisplayFormat(tempscreen);
-	SDL_FreeSurface(tempscreen);
 }
 
 void ToggleFullscreen()
@@ -178,7 +162,6 @@ int TickTimer()
 String GetBasePath()
 {
 	String base_path;
-
 #ifdef RELATIVE_PATHS
 	char* exedir = lisys_relative_exedir();
 	if (exedir != NULL)
@@ -191,7 +174,7 @@ String GetBasePath()
 		base_path = "./data/";
 	return base_path;
 #else
-	base_path = DATADIR "/";
+	base_path = "./";
 
 	for (int i=strlen(base_path)-1; i>=0; i--)
 	{
@@ -242,15 +225,14 @@ int main(int /*argc*/, char * /*argv*/[])
 	SDL_Flip(screen);
 */
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE);
+	SDL_Init(SDL_INIT_VIDEO);
 	if (!TextInit(base_path))
 		return 1;
 
 	SDL_Surface* icon = IMG_Load(base_path + "/hex-a-hop-16.png");
 	if (icon)
 	{
-		SDL_SetColorKey(icon, SDL_SRCCOLORKEY, SDL_MapRGB(icon->format, 0, 255, 255));
-		SDL_WM_SetIcon(icon, NULL);
+		SDL_SetWindowIcon(screen, icon);
 		SDL_FreeSurface(icon);
 	}
 
@@ -258,7 +240,7 @@ int main(int /*argc*/, char * /*argv*/[])
 
 	InitScreen();
 
-	SDL_WarpMouse(SCREEN_W/2, SCREEN_H/2);
+	//SDL_WarpMouse(SCREEN_W/2, SCREEN_H/2);
 
 	int videoExposed = 1;
 
@@ -280,25 +262,17 @@ int main(int /*argc*/, char * /*argv*/[])
 		{
 			int x = 0;
 
-			if ((SDL_focus & 6)==6)
-			{
-				videoExposed = 1;
+			videoExposed = 1;
 
-				x = TickTimer();
+			x = TickTimer();
 
-				while (x<10)
-				{
-					SDL_Delay(10-x);
-					x += TickTimer();
-				}
-			
-				StateMakerBase::current->Update(x / 1000.0);
-			}
-			else
+			while (x<10)
 			{
-				// Not focussed. Try not to eat too much CPU!
-				SDL_Delay(150);
+				SDL_Delay(10-x);
+				x += TickTimer();
 			}
+		
+			StateMakerBase::current->Update(x / 1000.0);
 
 			// experimental...
 			if (!noMouse)
@@ -311,12 +285,8 @@ int main(int /*argc*/, char * /*argv*/[])
 				#ifdef USE_OPENGL
 					SDL_GL_SwapBuffers();
 				#else
-					if (screen && realScreen!=screen)
-					{
-						SDL_Rect r = {0,0,SCREEN_W,SCREEN_H};
-						SDL_BlitSurface(screen, &r, realScreen, &r);
-					}
-					SDL_Flip(realScreen);
+					SDL_RenderPresent(screenRenderer);
+					SDL_RenderClear(screenRenderer);
 				#endif
 				videoExposed = 0;
 			}
@@ -365,9 +335,6 @@ int main(int /*argc*/, char * /*argv*/[])
 
 		switch (e.type)
 		{
-			case SDL_VIDEOEXPOSE:
-				videoExposed = 1;
-				break;
 
 #ifdef WIN32
 /*			case SDL_SYSWMEVENT:
@@ -403,22 +370,6 @@ int main(int /*argc*/, char * /*argv*/[])
 				break;
 			}*/
 #endif
-
-			case SDL_ACTIVEEVENT:
-			{
-				int gain = e.active.gain ? e.active.state : 0;
-				int loss = e.active.gain ? 0 : e.active.state;
-				SDL_focus = (SDL_focus | gain) & ~loss;
-				if (gain & SDL_APPACTIVE)
-					StateMakerBase::current->ScreenModeChanged();
-				if (loss & SDL_APPMOUSEFOCUS)
-					noMouse = 1;
-				else if (gain & SDL_APPMOUSEFOCUS)
-					noMouse = 0;
-
-				break;
-			}
-
 			case SDL_MOUSEMOTION:
 				noMouse = false;
 				StateMakerBase::current->Mouse(e.motion.x, e.motion.y, e.motion.x-mousex, e.motion.y-mousey, 0, 0, mouse_buttons);

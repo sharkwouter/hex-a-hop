@@ -73,18 +73,23 @@ add_definitions(-DHAVE_CONFIG_H)
 # Find needed libraries
 ################################################################
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMake")
+
 # find OpenGL headers and library
 find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIR})
 
-find_package(SDL REQUIRED)
-include_directories(${SDL_INCLUDE_DIR})
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIR})
 
-find_package(SDL_mixer REQUIRED)
-include_directories(${SDLMIXER_INCLUDE_DIR})
+find_package(SDL2_mixer REQUIRED)
+include_directories(${SDL2_MIXER_INCLUDE_DIR})
 
-find_package(SDL_ttf REQUIRED)
-include_directories(${SDLTTF_INCLUDE_DIR})
+find_package(SDL2_ttf REQUIRED)
+include_directories(${SDL2_TTF_INCLUDE_DIR})
+
+find_package(SDL2_image REQUIRED)
+include_directories(${SDL2_IMAGE_INCLUDE_DIR})
 
 ################################################################
 # game executable
@@ -192,11 +197,13 @@ endif(APPLE)
 
 target_link_libraries(
 	hex-a-hop
-		${SDL_LIBRARY}
-		${SDLMIXER_LIBRARY}
-		${SDLTTF_LIBRARY}
+		${SDL2_LIBRARY}
+		${SDL2_IMAGE_LIBRARY}
+		${SDL2_MIXER_LIBRARY}
+		${SDL2_TTF_LIBRARY}
 		${OPENGL_LIBRARIES}
-		SDLmain
+		mikmod
+		SDL2main
 )
 
 
@@ -213,11 +220,11 @@ install(
 
 # copy SDL frameworks into app bundle for Mac OS X
 if(APPLE)
-	INSTALL(DIRECTORY /Users/smekal/Library/Frameworks/SDL.framework
+	INSTALL(DIRECTORY /Users/smekal/Library/Frameworks/SDL2.framework
 					DESTINATION hex-a-hop.app/Contents/Frameworks)
-	INSTALL(DIRECTORY /Users/smekal/Library/Frameworks/SDL_mixer.framework
+	INSTALL(DIRECTORY /Users/smekal/Library/Frameworks/SDL2_mixer.framework
 					DESTINATION hex-a-hop.app/Contents/Frameworks)
-	INSTALL(DIRECTORY /Users/smekal/Library/Frameworks/SDL_ttf.framework
+	INSTALL(DIRECTORY /Users/smekal/Library/Frameworks/SDL2_ttf.framework
 					DESTINATION hex-a-hop.app/Contents/Frameworks)
 endif(APPLE)
 
@@ -255,11 +262,13 @@ message( "  CMAKE_OSX_ARCHITECTURES = ${CMAKE_OSX_ARCHITECTURES}" )
 message( "  CMAKE_GENERATOR = ${CMAKE_GENERATOR}" )
 message( "  OPENGL_INCLUDE_DIR = ${OPENGL_INCLUDE_DIR}" )
 message( "  OPENGL_LIBRARY = ${OPENGL_LIBRARY}" )
-message( "  SDL_INCLUDE_DIR = ${SDL_INCLUDE_DIR}" )
-message( "  SDL_LIBRARY = ${SDL_LIBRARY}" )
-message( "  SDLMIXER_INCLUDE_DIR = ${SDLMIXER_INCLUDE_DIR}" )
-message( "  SDLMIXER_LIBRARY = ${SDLMIXER_LIBRARY}" )
-message( "  SDLTTF_INCLUDE_DIR = ${SDLTTF_INCLUDE_DIR}" )
-message( "  SDLTTF_LIBRARY = ${SDLTTF_LIBRARY}" )
+message( "  SDL2_INCLUDE_DIR = ${SDL2_INCLUDE_DIR}" )
+message( "  SDL2_LIBRARY = ${SDL2_LIBRARY}" )
+message( "  SDL2_IMAGE_INCLUDE_DIR = ${SDL2_IMAGE_INCLUDE_DIR}" )
+message( "  SDL2_IMAGE_LIBRARY = ${SDL2_IMAGE_LIBRARY}" )
+message( "  SDL2_MIXER_INCLUDE_DIR = ${SDL2_MIXER_INCLUDE_DIR}" )
+message( "  SDL2_MIXER_LIBRARY = ${SDL2_MIXER_LIBRARY}" )
+message( "  SDL2_TTF_INCLUDE_DIR = ${SDL2_TTF_INCLUDE_DIR}" )
+message( "  SDL2_TTF_LIBRARY = ${SDL2_TTF_LIBRARY}" )
 message( "" )
 	

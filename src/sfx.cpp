@@ -29,37 +29,37 @@
 
 static const char* const music_names[HHOP_MUSIC_MAX] =
 {
-	"music-ending",
-	"music-game",
+	"music-ending.ogg",
+	"music-game.ogg",
 //	"music-map",
 //	"music-title",
 //	"music-win"
 };
 static const char* const sound_names[HHOP_SOUND_MAX] =
 {
-	"sound-builder",
-	"sound-collapse",
-	"sound-crack",
-	"sound-death",
-	"sound-disintegrate",
-	"sound-explode-big",
-	"sound-explode-small",
-	"sound-floater-enter",
-	"sound-floater-move",
-	"sound-found-antiice",
-	"sound-found-jump",
-	"sound-ice",
-	"sound-laser",
-	"sound-lift-up",
-	"sound-lift-down",
-	"sound-spinner",
-	"sound-step",
-	"sound-trampoline",
-	"sound-ui-fade",
-	"sound-ui-menu",
-	"sound-used-antiice",
-	"sound-used-jump",
-	"sound-win"
+	"sound-builder.ogg",
+	"sound-collapse.ogg",
+	"sound-crack.ogg",
+	"sound-death.ogg",
+	"sound-disintegrate.ogg",
+	"sound-explode-big.ogg",
+	"sound-explode-small.ogg",
+	"sound-floater-enter.ogg",
+	"sound-floater-move.ogg",
+	"sound-found-antiice.ogg",
+	"sound-found-jump.ogg",
+	"sound-ice.ogg",
+	"sound-laser.ogg",
+	"sound-lift-up.ogg",
+	"sound-lift-down.ogg",
+	"sound-spinner.ogg",
+	"sound-step.ogg",
+	"sound-trampoline.ogg",
+	"sound-ui-fade.ogg",
+	"sound-ui-menu.ogg",
+	"sound-used-antiice.ogg",
+	"sound-used-jump.ogg",
+	"sound-win.ogg"
 };
 
 /* We store delayed sound effects in a queue and play them back when the

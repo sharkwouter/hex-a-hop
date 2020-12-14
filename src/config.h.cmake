@@ -80,3 +80,7 @@
 
 /* Version number of package */
 #define VERSION             "@hah_VERSION@"
+
+#define FONT_PATH          "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+#define DISABLE_SOUND 1

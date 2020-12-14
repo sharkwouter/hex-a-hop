@@ -19,8 +19,6 @@
 
 struct HexPuzzle;
 
-#include <SDL/SDL_endian.h>
-
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
 #define SWAP16(X)    (X)
 #define SWAP32(X)    (X)
